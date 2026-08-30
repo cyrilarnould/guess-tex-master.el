@@ -113,6 +113,28 @@ guess-TeX-master-from-files both fail.  Same choices as TeX-master variable."
 
 (defvar TeX-master)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun guess-TeX-master--elisp-includes-regexp (filename)
+  "Return a string to match includes of FILENAME against."
+  (concat "\\\\"
+          (regexp-opt guess-TeX-master-includes t)
+          "{\\([^}]*\\)\\(}{\\)?"
+          (file-name-sans-extension (file-name-nondirectory filename))
+          "\\([.]tex\\)?\\\"?}"))
+
+(defun guess-TeX-master--files-path ()
+  "Return a string for the starting point based on guess-TeX-master-from-files-up."
+  (let (files-path)
+    (setq files-path
+            (make-string
+             (+ 1 (* 3 guess-TeX-master-from-files-up)) ?.))
+    (dotimes (i guess-TeX-master-from-files-up)
+      (store-substring files-path (+ 1 (* i 3)) "/"))
+    files-path))
+  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun guess-TeX-master-from-files (filename)
   "Guess TeX master for FILENAME from local files using find and grep.
 Will execute find in guess-TeX-master-from-files-up directories above FILENAME
@@ -120,19 +142,13 @@ with a -maxdepth of guess-TeX-master-from-files-depth.  Greps all .tex files
 that were found for includes that match FILENAME and returns the first candidate
 that matches."
   (let ((candidate)
-        (files-list)
-        (files-path))
+        (files-list))
     (when (and (executable-find "find") (executable-find "grep"))
-      (setq files-path
-            (make-string
-             (+ 1 (* 3 guess-TeX-master-from-files-up)) ?.))
-      (dotimes (i guess-TeX-master-from-files-up)
-        (store-substring files-path (+ 1 (* i 3)) "/"))
       (setq files-list
             (split-string
              (shell-command-to-string
               (concat "find "
-                      files-path
+                      (guess-TeX-master--files-path)
                       " -maxdepth "
                       (number-to-string guess-TeX-master-from-files-depth)
                       " -type f -name \"*.tex\""))
@@ -156,11 +172,7 @@ that matches."
               (when includes-list
                 (dolist (include includes-list)
                   (unless candidate
-                    (string-match (concat "\\\\"
-                                          (regexp-opt guess-TeX-master-includes t)
-                                          "{\\([^}]*\\)\\(}{\\)?"
-                                          (file-name-sans-extension (file-name-nondirectory filename))
-                                          "\\([.]tex\\)?\\\"?}")
+                    (string-match (guess-TeX-master--elisp-includes-regexp filename)
                                   include)
                     (when (string= filename
                                    (file-truename (string-replace "\"" ""
@@ -183,11 +195,7 @@ that matches."
                 (save-excursion
                   (goto-char (point-min))
                   (while (and (not candidate)
-                              (re-search-forward (concat "\\\\"
-                                                         (regexp-opt guess-TeX-master-includes t)
-                                                         "{\\([^}]*\\)\\(}{\\)?"
-                                                         (file-name-sans-extension (file-name-nondirectory filename))
-                                                         "\\([.]tex\\)?\\\"?}") nil t))
+                              (re-search-forward (guess-TeX-master--elisp-includes-regexp filename) nil t))
                     (when (string= filename
                                    (file-truename (string-replace "\"" ""
                                                                   (concat (file-name-directory file)
