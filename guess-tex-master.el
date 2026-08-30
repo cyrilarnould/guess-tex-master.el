@@ -136,23 +136,34 @@ guess-TeX-master-from-files both fail.  Same choices as TeX-master variable."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun guess-TeX-master-from-files (filename)
-  "Guess TeX master for FILENAME from local files using find and grep.
+  "Guess TeX master for FILENAME from local files using find or fd and grep.
 Will execute find in guess-TeX-master-from-files-up directories above FILENAME
 with a -maxdepth of guess-TeX-master-from-files-depth.  Greps all .tex files
 that were found for includes that match FILENAME and returns the first candidate
 that matches."
   (let ((candidate)
         (files-list))
-    (when (and (executable-find "find") (executable-find "grep"))
-      (setq files-list
-            (split-string
-             (shell-command-to-string
-              (concat "find "
-                      (guess-TeX-master--files-path)
-                      " -maxdepth "
-                      (number-to-string guess-TeX-master-from-files-depth)
-                      " -type f -name \"*.tex\""))
-             "\n" t))
+    (when (and (or (executable-find "fd") (executable-find "find")) (executable-find "grep"))
+      (when (executable-find "fd")
+        (setq files-list
+              (split-string
+               (shell-command-to-string
+                (concat "fd . "
+                        (guess-TeX-master--files-path)
+                        " --max-depth "
+                        (number-to-string guess-TeX-master-from-files-depth)
+                        " --extension tex"))
+               "\n" t)))
+      (unless files-list
+        (setq files-list
+              (split-string
+               (shell-command-to-string
+                (concat "find "
+                        (guess-TeX-master--files-path)
+                        " -maxdepth "
+                        (number-to-string guess-TeX-master-from-files-depth)
+                        " -type f -name \"*.tex\""))
+               "\n" t)))
       (when files-list
         (dolist (file files-list)
           (unless candidate
