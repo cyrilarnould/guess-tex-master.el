@@ -3,9 +3,9 @@
 ;; Filename: guess-tex-master.el
 ;; Description: Guess LaTeX Master File
 ;; Author: Unknown & Matthew L. Fidler
-;; Maintainer: Matthew L. Fidler
+;; Maintainer: Matthew L. Fidler & Cyril Arnould
 ;; Created: Mon Dec 12 14:12:47 2011 (-0600)
-;; Version:  0.4
+;; Version:  1.0
 ;; Last-Updated: Mon Dec 12 15:31:35 2011 (-0600)
 ;;           By: Matthew L. Fidler
 ;;     Update #: 56
